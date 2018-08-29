@@ -1,7 +1,7 @@
 module Bootstrap exposing (main)
 
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
-import DatePicker exposing (defaultSettings, DateEvent(..))
+import DatePicker exposing (defaultSettings)
 import Html exposing (Html, div, form, h1, input, label, text)
 import Html.Attributes exposing (class, type_, value)
 
@@ -48,17 +48,11 @@ update msg ({ datePicker } as model) =
     case msg of
         ToDatePicker msg ->
             let
-                ( newDatePicker, datePickerFx, event ) =
-                    DatePicker.update settings msg datePicker
+                ( newDatePicker, datePickerFx, newDate ) =
+                    DatePicker.update settings datePicker msg model.date
             in
                 { model
-                    | date =
-                        case event of
-                            Changed date ->
-                                date
-
-                            NoChange ->
-                                model.date
+                    | date = newDate
                     , datePicker = newDatePicker
                 }
                     ! [ Cmd.map ToDatePicker datePickerFx ]

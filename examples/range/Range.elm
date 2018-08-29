@@ -1,7 +1,7 @@
 module Range exposing (main)
 
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
-import DatePicker exposing (defaultSettings, DateEvent(..))
+import DatePicker exposing (defaultSettings)
 import Html exposing (Html, div, h1, text)
 
 
@@ -105,16 +105,8 @@ update msg model =
     case msg of
         ToStartDatePicker msg ->
             let
-                ( newDatePicker, datePickerFx, dateEvent ) =
-                    DatePicker.update (startSettings model.endDate) msg model.startDatePicker
-
-                newDate =
-                    case dateEvent of
-                        Changed newDate ->
-                            newDate
-
-                        _ ->
-                            model.startDate
+                ( newDatePicker, datePickerFx, newDate ) =
+                    DatePicker.update (startSettings model.endDate) model.startDatePicker msg model.startDate
             in
                 { model
                     | startDate = newDate
@@ -124,16 +116,8 @@ update msg model =
 
         ToEndDatePicker msg ->
             let
-                ( newDatePicker, datePickerFx, dateEvent ) =
-                    DatePicker.update (endSettings model.startDate) msg model.endDatePicker
-
-                newDate =
-                    case dateEvent of
-                        Changed newDate ->
-                            newDate
-
-                        _ ->
-                            model.endDate
+                ( newDatePicker, datePickerFx, newDate ) =
+                    DatePicker.update (endSettings model.startDate) model.endDatePicker msg model.endDate
             in
                 { model
                     | endDate = newDate

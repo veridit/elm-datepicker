@@ -4,11 +4,12 @@ module SimpleNightwatch exposing (main)
 -}
 
 import Date exposing (Date, Day(..), day, dayOfWeek, month, year)
-import DatePicker exposing (defaultSettings, DateEvent(..))
+import DatePicker exposing (defaultSettings)
 import Html exposing (Html, div, h1, text, button)
 import Process
 import Task
 import Time
+
 
 type Msg
     = ToDatePicker DatePicker.Msg
@@ -50,16 +51,8 @@ update msg ({ date, datePicker } as model) =
     case msg of
         ToDatePicker msg ->
             let
-                ( newDatePicker, datePickerFx, dateEvent ) =
-                    DatePicker.update settings msg datePicker
-
-                newDate =
-                    case dateEvent of
-                        Changed newDate ->
-                            newDate
-
-                        _ ->
-                            date
+                ( newDatePicker, datePickerFx, newDate ) =
+                    DatePicker.update settings datePicker msg model.date
             in
                 { model
                     | date = newDate
@@ -92,7 +85,7 @@ formatDate d =
 
 delayedNoOpCmd : { seconds : Float } -> Cmd Msg
 delayedNoOpCmd { seconds } =
-        Process.sleep (seconds * Time.second)
+    Process.sleep (seconds * Time.second)
         |> Task.perform (\_ -> NoOp)
 
 
