@@ -23,8 +23,8 @@ Add a date and the date picker state to your `Model`.
    
 type alias Model =
   { ...
-  , date : date
-  , datePicker : DatePicker.State
+  , date : DatePicker.Model
+  , datePicker : DatePicker.UiState
   ...
   }
 
@@ -92,11 +92,12 @@ update msg model =
                 ( newDatePicker, datePickerCmd, newDate ) =
                     DatePicker.update datePickerSettings model.startDatePicker msg model.date
             in
-                { model
+                ({ model
                     | date = newDate
                     , datePicker = newDatePicker
-                }
-                    ! [ Cmd.map SetDatePicker datePickerCmd ]
+                 }
+                , Cmd.map SetDatePicker datePickerCmd
+                )
 
 ```
 
@@ -121,7 +122,7 @@ See the [examples][examples] folder or try it on ellie-app: [simple] example and
 [bootstrap]: https://ellie-app.com/pwGJj5T6TBa1/0
 
 
-## CSS
+## Styling
 
 The CSS for the date picker is distributed separately.  You can grab
 the compiled CSS from [here][compiled] or you can grab the SCSS source
