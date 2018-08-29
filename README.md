@@ -1,65 +1,106 @@
-# elm-datepicker
+# elm-elements-datepicker
+
+A reusable date picker component in Elm with Style Elements.
+
+## Installation
 
 ``` shell
-elm package install elm-community/elm-datepicker
+elm package install veridit/elm-elements-datepicker
 ```
-
-A reusable date picker component in Elm.
-
 
 ## Usage
 
-The `DatePicker.init` function initialises the DatePicker. It returns the initialised DatePicker and associated `Cmds` so it must be done in your program's `init` or `update` functions:
+1. Add a date and the date picker state to your `Model`.
+2. Add a `Msg` for forwarding messages to the datepicker.
+3. Edit `init`, `update` and `view` to use the datepicker.
+4. Optionally adjust the settings of the date picker.
 
-**Note** Make sure you don't throw away the initial `Cmd`!
+
+### Walkthrough
+
+Add a date and the date picker state to your `Model`.
+```elm
+   
+type alias Model =
+  { ...
+  , date : date
+  , datePicker : DatePicker.State
+  ...
+  }
+
+```
+
+Add a `Msg` for forwarding messages to the datepicker.
+
+```elm
+   
+type Msg
+  = ...
+  | DatePickerMsg DatePicker.Msg
+  ...
+```
+
+
+Edit `init`, `view` and `update` to use the datepicker.
+
+`init`
 
 ```elm
    
 init : (Model, Cmd Msg)
-...
+init = 
     let
         ( datePicker, datePickerCmd ) =
             DatePicker.init 
     in
-        (
-            { model | datePicker = datePicker },
-            Cmd.map SetDatePicker datePickerCmd
+        ( { date = ... , datePicker = datePicker }
+        , Cmd.map DatePickerMsg datePickerCmd
         )
 ```
 
-The `DatePicker` can be displayed in a view using the `DatePicker.view` function. It returns its own
-message type so you should wrap it in one of your own messages using `Html.map`:
-
+Prepare default settings
 
 ```elm
-type Msg
-    = ...
-    | SetDatePicker DatePicker.Msg
-    | ...
+datePickerSettings = DatePicker.defaultSettings
+```
 
+`view`
 
-view : Model -> Html Msg
+```elm
+view : Model -> Element Msg
 view model =
     ...
-    div [] [
-        DatePicker.view
-            model.date 
-            someSettings
-            model.startDatePicker 
-         |> Html.map SetDatePicker
+    column []
+        [ DatePicker.view
+            datePickerSettings
+            model.datePicker
+            model.date
+         |> Html.map DatePickerMsg
         ]
+```
+
+`update`
+
+```elm
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        ...
+
+         DatePickerMsg msg ->
+            let
+                ( newDatePicker, datePickerCmd, newDate ) =
+                    DatePicker.update datePickerSettings model.startDatePicker msg model.date
+            in
+                { model
+                    | date = newDate
+                    , datePicker = newDatePicker
+                }
+                    ! [ Cmd.map SetDatePicker datePickerCmd ]
 
 ```
 
-To handle `Msg` in your update function, you should unwrap the `DatePicker.Msg` and pass it down to the `DatePicker.update` function. The `DatePicker.update` function returns:
-
-* the new model
-* any command 
-* the new date as a `DateEvent (Maybe Date)`, where `DateEvent` is really just `Maybe` with different semantics, to avoid a potentially confusing `Maybe Maybe`.
-
-To create the settings to pass to `update`, DatePicker.defaultSettings` is provided to make it easier to use. You only have to override the settings that you are interested in.
-
-**Note** The datepicker does _not_ retain an internal idea of a picked date in its model. That is, it depends completely on you for an idea of what date is chosen, so that third tuple member is important! Evan Czaplicki has a compelling argument for why components should not necessarily have an their own state for the primary data they manage [here](https://github.com/evancz/elm-sortable-table#single-source-of-truth).
+Adjust the settings of the datepicker (Optional)
 
 ```elm
 someSettings : DatePicker.Settings
@@ -68,32 +109,8 @@ someSettings =
         | inputClassList = [ ( "form-control", True ) ]
         , inputId = Just "datepicker"
     }
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        ...
-
-         SetDatePicker msg ->
-            let
-                ( newDatePicker, datePickerCmd, dateEvent ) =
-                    DatePicker.update someSettings msg model.startDatePicker
-
-                date =
-                    case dateEvent of
-                        NoChange ->
-                            model.date
-
-                        Changed newDate ->
-                            newDate |> processDate
-            in
-                { model
-                    | date = date
-                    , datePicker = newDatePicker
-                }
-                    ! [ Cmd.map SetDatePicker datePickerCmd ]
-
 ```
+
 
 ## Examples
 
@@ -114,6 +131,37 @@ from [here][scss].
 [scss]: https://github.com/elm-community/elm-datepicker/blob/master/css/elm-datepicker.scss
 
 
+## Architecture
+
+Goals
+
+1. Elm debug compatible.
+2. Single source of truth.
+3. Simple API for simple usage, advanced API for advanced usage.
+4. Embeddable in non elm projects.
+
+Considerations to reach those goals
+
+### Elm debug compatible.
+
+The data model inside the date picker can not contain any functions, but functions are used to configure the
+behaviour of the date picker. Therefore state is stored in the model, and a separate record of configuration
+is given to the update and view functions, but is not stored in neither the model of the date picker,
+nor in the model where the date picker is used.
+
+### Single source of truth.
+By avoiding the storage of a date in the date picker model, the code that embeds the date picker always
+has access to and control over the date. This is as outlined [here](https://github.com/evancz/elm-sortable-table#single-source-of-truth)
+
+
+### Simple API for simple usage, advanced API for advanced usage.
+
+1. Simple API has no configuration or adjustments.
+2. Advanced API for configuration.
+
+### Embeddable in non elm projects.
+Allow other projects the the speed and stability of Elm by offering an embeddable date picker.
+
 ## Running the acceptance tests
 ### Prerequisites
 
@@ -132,3 +180,4 @@ cd examples && make && cd ..
 `./run-acceptance-tests`
 
 Please file an issue if you have any difficulty running the tests.
+
