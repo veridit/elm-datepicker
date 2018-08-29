@@ -1,4 +1,4 @@
-all: simple-example bootstrap-example range-example simple-nightwatch-example
+all: simple-example bootstrap-example range-example simple-nightwatch-example functor-example
 
 simple-example:
 	cd .. && elm make --warn examples/simple/Simple.elm --output=examples/simple/simple.js
@@ -11,3 +11,6 @@ range-example:
 
 simple-nightwatch-example:
 	cd .. && elm make --warn examples/simple-nightwatch/SimpleNightwatch.elm --output=examples/simple-nightwatch/simple-nightwatch.js
+
+functor-example:
+	cd .. && elm make --warn examples/functor/Functor.elm --output=examples/functor/functor.js
