@@ -17,8 +17,8 @@ type Msg
 
 
 type alias Model =
-    { date : Maybe Date
-    , datePicker : DatePicker.DatePicker
+    { date : DatePicker.Model
+    , datePicker : DatePicker.UiState
     }
 
 

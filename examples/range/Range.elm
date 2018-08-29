@@ -11,10 +11,10 @@ type Msg
 
 
 type alias Model =
-    { startDate : Maybe Date
-    , endDate : Maybe Date
-    , startDatePicker : DatePicker.DatePicker
-    , endDatePicker : DatePicker.DatePicker
+    { startDate : DatePicker.Model
+    , endDate : DatePicker.Model
+    , startDatePicker : DatePicker.UiState
+    , endDatePicker : DatePicker.UiState
     }
 
 

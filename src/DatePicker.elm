@@ -2,7 +2,8 @@ module DatePicker
     exposing
         ( Msg
         , Settings
-        , DatePicker
+        , Model
+        , UiState
         , defaultSettings
         , init
         , initFromDate
@@ -24,7 +25,7 @@ module DatePicker
 
 # Tea ☕
 
-@docs Msg, DatePicker
+@docs Msg, UiState, Model
 @docs init, initFromDate, initFromDates, update, view, isOpen, focusedDate
 
 
@@ -43,13 +44,15 @@ import Html.Keyed
 import Json.Decode as Json
 import Task
 
+{-| The single source of truth for the currently selected date. -}
+type alias Model = Maybe Date
 
-{-| An opaque type representing messages that are passed inside the DatePicker.
+{-| An opaque type representing messages that are passed inside the UiState.
 -}
 type Msg
     = CurrentDate Date
     | ChangeFocus Date
-    | Pick (Maybe Date)
+    | Pick Model
     | Text String
     | SubmitText
     | Focus
@@ -59,6 +62,8 @@ type Msg
 
 
 {-| The type of date picker settings.
+The settings contain functions, and is therefore not suitable for storage
+in a model, but should rather be just a constant.
 -}
 type alias Settings =
     { placeholder : String
@@ -80,11 +85,11 @@ type alias Settings =
     }
 
 
-type alias Model =
+type alias UiStateData =
     { open : Bool
     , forceOpen : Bool
     , focused :
-        Maybe Date
+        Model
 
     -- date currently center-focused by picker, but not necessarily chosen
     , inputText :
@@ -96,10 +101,10 @@ type alias Model =
     }
 
 
-{-| The DatePicker model. Opaque, hence no field docs.
+{-| The ui UiState. Opaque, hence no field docs.
 -}
-type DatePicker
-    = DatePicker Model
+type UiState
+    = UiState UiStateData
 
 
 {-| A record of default settings for the date picker. Extend this if
@@ -209,15 +214,15 @@ for the date picker to behave correctly.
 
     init =
         let
-            ( datePicker, datePickerFx ) =
+            ( datePicker, datePickerCmd ) =
                 DatePicker.init
         in
-            { picker = datePicker } ! [ Cmd.map ToDatePicker datePickerfx ]
+            ({ picker = datePicker }, Cmd.map DatePickerMsg datePickerCmd)
 
 -}
-init : ( DatePicker, Cmd Msg )
+init : ( UiState, Cmd Msg )
 init =
-    ( DatePicker <|
+    ( UiState <|
         { open = False
         , forceOpen = False
         , focused = Just initDate
@@ -234,9 +239,9 @@ init =
         { picker = DatePicker.initFromDate date } ! []
 
 -}
-initFromDate : Date -> DatePicker
+initFromDate : Date -> UiState
 initFromDate date =
-    DatePicker <|
+    UiState <|
         { open = False
         , forceOpen = False
         , focused = Just date
@@ -251,9 +256,9 @@ initFromDate date =
         { picker = DatePicker.initFromDates today date } ! []
 
 -}
-initFromDates : Date -> Maybe Date -> DatePicker
+initFromDates : Date -> Model -> UiState
 initFromDates today date =
-    DatePicker <|
+    UiState <|
         { open = False
         , forceOpen = False
         , focused = date
@@ -278,32 +283,32 @@ prepareDates date firstDayOfWeek =
 
 {-| Expose if the datepicker is open
 -}
-isOpen : DatePicker -> Bool
-isOpen (DatePicker model) =
+isOpen : UiState -> Bool
+isOpen (UiState model) =
     model.open
 
 
 {-| Expose the currently focused date
 -}
-focusedDate : DatePicker -> Maybe Date
-focusedDate (DatePicker model) =
+focusedDate : UiState -> Model
+focusedDate (UiState model) =
     model.focused
 
 
 {-| The date picker update function. The third tuple member represents a user action to change the
 date.
 -}
-update : Settings -> DatePicker -> Msg -> Maybe Date -> ( DatePicker, Cmd Msg, Maybe Date )
-update settings (DatePicker ({ forceOpen, focused } as model)) msg modelDate =
+update : Settings -> UiState -> Msg -> Model -> ( UiState, Cmd Msg, Model )
+update settings (UiState ({ forceOpen, focused } as model)) msg modelDate =
     case msg of
         CurrentDate date ->
-            ( DatePicker { model | focused = Just date, today = date }, Cmd.none, modelDate )
+            ( UiState { model | focused = Just date, today = date }, Cmd.none, modelDate )
 
         ChangeFocus date ->
-            ( DatePicker { model | focused = Just date }, Cmd.none, modelDate )
+            ( UiState { model | focused = Just date }, Cmd.none, modelDate )
 
         Pick date ->
-            ( DatePicker
+            ( UiState
                 { model
                     | open = False
                     , inputText = Nothing
@@ -314,7 +319,7 @@ update settings (DatePicker ({ forceOpen, focused } as model)) msg modelDate =
             )
 
         Text text ->
-            ( DatePicker { model | inputText = Just text }, Cmd.none, modelDate )
+            ( UiState { model | inputText = Just text }, Cmd.none, modelDate )
 
         SubmitText ->
             let
@@ -339,7 +344,7 @@ update settings (DatePicker ({ forceOpen, focused } as model)) msg modelDate =
                                 Err _ ->
                                     Nothing
             in
-                ( DatePicker <|
+                ( UiState <|
                     { model
                         | inputText =
                             if newDate /= modelDate then
@@ -357,16 +362,16 @@ update settings (DatePicker ({ forceOpen, focused } as model)) msg modelDate =
                 )
 
         Focus ->
-            ( DatePicker { model | open = True, forceOpen = False }, Cmd.none, modelDate )
+            ( UiState { model | open = True, forceOpen = False }, Cmd.none, modelDate )
 
         Blur ->
-            ( DatePicker { model | open = forceOpen }, Cmd.none, modelDate )
+            ( UiState { model | open = forceOpen }, Cmd.none, modelDate )
 
         MouseDown ->
-            ( DatePicker { model | forceOpen = True }, Cmd.none, modelDate )
+            ( UiState { model | forceOpen = True }, Cmd.none, modelDate )
 
         MouseUp ->
-            ( DatePicker { model | forceOpen = False }, Cmd.none, modelDate )
+            ( UiState { model | forceOpen = False }, Cmd.none, modelDate )
 
 
 {-| Generate a message that will act as if the user has chosen a certain date,
@@ -384,15 +389,15 @@ Rather, it will:
     update datepickerSettings (pick (Just someDate)) datepicker
 
 -}
-pick : Maybe Date -> Msg
+pick : Model -> Msg
 pick =
     Pick
 
 
 {-| The date picker view. The Date passed is whatever date it should treat as selected.
 -}
-view : Maybe Date -> Settings -> DatePicker -> Html Msg
-view pickedDate settings (DatePicker ({ open } as model)) =
+view : Model -> Settings -> UiState -> Html Msg
+view pickedDate settings (UiState ({ open } as model)) =
     let
         class =
             mkClass settings
@@ -447,7 +452,7 @@ view pickedDate settings (DatePicker ({ open } as model)) =
             ]
 
 
-datePicker : Maybe Date -> Settings -> Model -> Html Msg
+datePicker : Model -> Settings -> UiStateData -> Html Msg
 datePicker pickedDate settings ({ focused, today } as model) =
     let
         currentDate =
